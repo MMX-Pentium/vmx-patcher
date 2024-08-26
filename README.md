@@ -1,4 +1,4 @@
-# vmx pather
+# vmx patcher
 VMware PlayerのGUIで変更できない設定の一部を簡単に変更するバッチファイルです。
 今のところファームウェアの切り替え(BIOS/UEFI)とサイドチャネル緩和策の無効化ができます。
 

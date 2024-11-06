@@ -1,59 +1,57 @@
 @echo off
 
-set vmx=%~1
+:: ファイルパスを引数として取得（スペース対応のために引用符で囲む）
+set "vmx=%~1"
 
+:: ファイルの存在チェック
 if exist "%vmx%" (
-    echo vmx Path "%vmx%"
-    goto userselect
+    echo 指定されたファイルが見つかりました: "%vmx%"
+    goto show_menu
 ) else (
-    echo "%vmx%" が存在しません。
+    echo ファイルが存在しません。
     pause
-    exit
+    exit /b
 )
 
+:show_menu
+echo 選択してください:
+echo 1: ファームウェアをUEFIに設定
+echo 2: ファームウェアをBIOSに設定
+echo 3: サイドチャネルの緩和を無効化
+set /p "choice=実行する番号を入力: "
 
-:userselect
-echo 1:ファームウェアをUEFIに設定
-echo 2:ファームウェアをBIOSに設定
-echo 3:サイドチャネルの緩和を無効化
-set /p num="実行する番号を入力:"
-
-if %num%==1 (
-    set firmtype=efi
-    goto firmedit
-) else if %num%==2 (
-    set firmtype=bios
-    goto firmedit
-) else if %num%==3 (
-    goto sidedis
+:: 入力値に基づいて処理を分岐
+if "%choice%" == "1" (
+    set "firmtype=efi"
+    goto configure_firmware
+) else if "%choice%" == "2" (
+    set "firmtype=bios"
+    goto configure_firmware
+) else if "%choice%" == "3" (
+    goto disable_sidechannel_mitigations
 ) else (
-    echo 1,2,3のいずれかを入力
-    goto userselect
+    echo 無効な入力です。1, 2, または 3 を入力してください。
+    goto show_menu
 )
 
-:firmedit
-find "firmware" "%vmx%"
-if %ERRORLEVEL% == 0 (
-    findstr /v /r /c:"firmware = *" "%vmx%" > "%vmx%.tmp"
-    set "editfile=%vmx%.tmp"
-    set exflag=1
-) else (
-    set editfile=%vmx%
-    set exflag=0
-)
-echo firmware = "%firmtype%" >>"%editfile%"
+:configure_firmware
+:: "firmware"設定が存在する場合、既存の"firmware"行を除外した一時ファイルを作成
+findstr /v /c:"firmware = " "%vmx%" > "%vmx%.tmp"
 
-if %exflag%==1 (
-    move /y "%editfile%" "%vmx%"
-)
+:: 新しいファームウェア設定を一時ファイルに追加
+echo firmware = "%firmtype%" >> "%vmx%.tmp"
 
-echo 多分成功
+:: 元ファイルを上書き更新
+move /y "%vmx%.tmp" "%vmx%"
+
+echo ファームウェア設定を完了しました。
 pause
-exit
+exit /b
 
-:sidedis
-echo ulm.disableMitigations="TRUE" >>"%vmx%"
+:disable_sidechannel_mitigations
+:: サイドチャネル緩和を無効化
+echo ulm.disableMitigations="TRUE" >> "%vmx%"
 
-echo 多分成功
+echo サイドチャネル緩和を無効化しました。
 pause
-exit
+exit /b
